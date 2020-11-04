@@ -38,7 +38,7 @@ class _RandomWordsState extends State<RandomWords> {
   final GlobalKey<ScaffoldState> _scaffoldkeyLogin = new GlobalKey<ScaffoldState>();
   final List<WordPair> _suggestions = <WordPair>[];            // NEW
   final TextStyle _biggerFont = const TextStyle(fontSize: 18); // NEW
-  final _saved = Set<WordPair>();     // NEW
+  var _saved = Set<WordPair>();     // NEW
   static bool disabledB=false;
   FirebaseAuth _auth;
   bool loggedin=false;
@@ -46,141 +46,161 @@ class _RandomWordsState extends State<RandomWords> {
 
 
 
+   favMaterialPageRoute()=> MaterialPageRoute<void>(
+    // NEW lines from here...
+    builder: (BuildContext context) {
+      final tiles = _saved.map(
+            (WordPair pair) {
+          return ListTile(
+            title: Text(
+              pair.asPascalCase,
+              style: _biggerFont,
+            ),
+            trailing: Icon(
+              Icons.delete_outline,
+              color: Colors.red,
+            ),
+            onTap: () {
+
+              _saved.remove(pair);
+              updateFirestore();
+              //TODO: fix this somehow (IDK how to update this screen)
+              Navigator.of(context).pushReplacement(favMaterialPageRoute());
+              setState(() {
+
+              });
+            },
+          );
+        },
+      );
+      final divided = ListTile.divideTiles(
+        context: context,
+        tiles: tiles,
+      ).toList();
+
+      return Scaffold(
+        key: _scaffoldkeySaved,
+        appBar: AppBar(
+          title: Text('Saved Suggestions'),
+        ),
+        body: ListView(children: divided),
+      );
+    }, // ...to here.
+  );
+
+
 
   void _pushSaved() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        // NEW lines from here...
-        builder: (BuildContext context) {
-          final tiles = _saved.map(
-                (WordPair pair) {
-              return ListTile(
-                title: Text(
-                  pair.asPascalCase,
-                  style: _biggerFont,
-                ),
-                trailing: Icon(
-                  Icons.delete_outline,
-                  color: Colors.red,
-                ),
-                onTap: () {      // NEW lines from here..
-                  final snackBar = SnackBar(content: Text('Deletion is not implemented yet'));
-
-// Find the Scaffold in the widget tree and use it to show a SnackBar.
-                  _scaffoldkeySaved.currentState.showSnackBar(snackBar);
-                },               // ... to here.
-              );
-            },
-          );
-          final divided = ListTile.divideTiles(
-            context: context,
-            tiles: tiles,
-          ).toList();
-
-          return Scaffold(
-            key: _scaffoldkeySaved,
-            appBar: AppBar(
-              title: Text('Saved Suggestions'),
-            ),
-            body: ListView(children: divided),
-          );
-        }, // ...to here.
-      ),
+      favMaterialPageRoute(),
     );
   }
+
+
+
+
+  loginMaterialPageRoute()=>MaterialPageRoute<void>(
+    // NEW lines from here...
+    builder: (BuildContext context) {
+
+      final myControllerEmail = TextEditingController();
+      final myControllerPass = TextEditingController();
+      final Email = TextFormField(
+        decoration: InputDecoration(
+            labelText: 'Email'
+        ),
+        controller: myControllerEmail,
+      );
+      final Password = TextFormField(
+        decoration: InputDecoration(
+            labelText: 'Password'
+        ),
+        controller: myControllerPass,
+      );
+      final loginButton =FlatButton(
+        onPressed: disabledB ? null : () async {
+          //TODO: fix this somehow (IDK how to update this screen)
+          disabledB = true;
+          //Navigator.of(context).pushReplacement(loginMaterialPageRoute());
+          Navigator.of(context).setState(() {
+            Navigator.of(context).build(context);
+          });
+
+
+          String emails=myControllerEmail.text;
+          String passs=myControllerPass.text;
+          bool t= false;
+
+          _auth = FirebaseAuth.instance;
+
+
+          try {
+            await _auth.signInWithEmailAndPassword(email: emails, password: passs);
+            t= true;
+          } catch (e) {
+
+          }
+
+          disabledB=false;
+
+
+
+
+          if(t){ //Login successful
+            loggedin=true;
+            userID=_auth.currentUser.uid;
+            await updateFirestoreOnLogin();
+            await updateFirestore();
+            Navigator.of(context).pop();
+            setState(() {
+              //build(context);
+            });
+
+          }
+          else{ //Login FAILED
+            userID="";
+            final snackBar = SnackBar(content: Text("There was an error logging into the app"));
+            _scaffoldkeyLogin.currentState.showSnackBar(snackBar);
+          }
+// Find the Scaffold in the widget tree and use it to show a SnackBar.
+
+        },
+        child: Text(
+          "Log in",
+        ),
+        color:Colors.red,
+        textColor: Colors.white,
+      );
+
+      return Scaffold(
+          key: _scaffoldkeyLogin,
+          appBar: AppBar(
+            title: Text('Login'),
+          ),
+          body: Column(children:[Email,Password,loginButton])
+      );
+    }, // ...to here.
+  );
+
+
+
+
+
 
   void _pushLogin() {
 
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        // NEW lines from here...
-        builder: (BuildContext context) {
-
-          final myControllerEmail = TextEditingController();
-          final myControllerPass = TextEditingController();
-          final Email = TextFormField(
-            decoration: InputDecoration(
-                labelText: 'Email'
-            ),
-            controller: myControllerEmail,
-          );
-          final Password = TextFormField(
-            decoration: InputDecoration(
-                labelText: 'Password'
-            ),
-            controller: myControllerPass,
-          );
-          final loginButton =FlatButton(
-            onPressed: disabledB ? null : () async {
-              //TODO: fix this somehow (IDK how to update this screen)
-              disabledB = true;
-              Navigator.of(context).setState(() {
-                Navigator.of(context).build(context);
-              });
-
-
-              String emails=myControllerEmail.text;
-              String passs=myControllerPass.text;
-              bool t= false;
-
-              _auth = FirebaseAuth.instance;
-
-
-              try {
-                await _auth.signInWithEmailAndPassword(email: emails, password: passs);
-                t= true;
-              } catch (e) {
-
-              }
-
-              disabledB=false;
-
-
-
-
-              if(t){ //Login successful
-                loggedin=true;
-                userID=_auth.currentUser.uid;
-                await updateFirestoreOnLogin();
-                await updateFirestore();
-                Navigator.of(context).pop();
-                setState(() {
-                  build(context);
-                });
-
-              }
-              else{ //Login FAILED
-                 userID="";
-                 final snackBar = SnackBar(content: Text("There was an error logging into the app"));
-                 _scaffoldkeyLogin.currentState.showSnackBar(snackBar);
-              }
-// Find the Scaffold in the widget tree and use it to show a SnackBar.
-
-            },
-            child: Text(
-              "Log in",
-            ),
-            color:Colors.red,
-            textColor: Colors.white,
-          );
-
-          return Scaffold(
-              key: _scaffoldkeyLogin,
-            appBar: AppBar(
-              title: Text('Login'),
-            ),
-            body: Column(children:[Email,Password,loginButton])
-          );
-        }, // ...to here.
-      ),
+      loginMaterialPageRoute(),
     );
   }
 void signOut(){
+    updateFirestore();
+    _saved={};
   _auth.signOut();
   loggedin=false;
   userID="";
   setState(() {
-    build(context);
+    //build(context);
   });
 }
   @override
@@ -208,6 +228,14 @@ Future<void> updateFirestoreOnLogin() async {
   //---- Retrieval ----
   try{
   retrieve= await database.doc(userID).get();
+  myMap=retrieve.data();
+  array1= myMap['firstList'];
+  array2= myMap['secondList'];
+  var i=0;
+  for(String s1 in array1){
+    _saved.add(WordPair(s1,array2[i]));
+    i+=1;
+  }
   }
   catch(e){
   }
@@ -215,14 +243,7 @@ Future<void> updateFirestoreOnLogin() async {
 
   //if(retrieve.hasData){
   //var retrieveList=retrieve.entries.toList();
-  myMap=retrieve.data();
-  array1= myMap['firstList'];
-  array2= myMap['secondList'];
-  var i=0;
-  for(String s1 in array1){
-  _saved.add(WordPair(s1,array2[i]));
-  i+=1;
-  }
+
 // }
 //------
 }
@@ -233,7 +254,7 @@ Future<void> updateFirestoreOnLogin() async {
     List<String> array1=[];
     List<String> array2=[];
 
-    CollectionReference database = FirebaseFirestore.instance.collection('Users');
+    CollectionReference database =await FirebaseFirestore.instance.collection('Users');
 
        for(WordPair p in _saved) {
          array1.add(p.first);
