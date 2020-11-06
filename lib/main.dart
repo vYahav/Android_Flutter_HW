@@ -7,10 +7,18 @@ import 'package:flutter/widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(App());
+  Firebase.initializeApp();
+  runApp(
+      ChangeNotifierProvider(create:(_)=> UserRepository(),
+      child:MyApp()
+      )
+
+      );
 }
 
 class MyApp extends StatelessWidget {
@@ -34,8 +42,7 @@ class RandomWords extends StatefulWidget {
 }
 
 class _RandomWordsState extends State<RandomWords> {
-  final GlobalKey<ScaffoldState> _scaffoldkeySaved = new GlobalKey<ScaffoldState>();
-  final GlobalKey<ScaffoldState> _scaffoldkeyLogin = new GlobalKey<ScaffoldState>();
+  static GlobalKey<ScaffoldState> _scaffoldkeySaved = GlobalKey<ScaffoldState>(debugLabel: '_scaffoldkeySaved');
   final List<WordPair> _suggestions = <WordPair>[];            // NEW
   final TextStyle _biggerFont = const TextStyle(fontSize: 18); // NEW
   var _saved = Set<WordPair>();     // NEW
@@ -46,9 +53,10 @@ class _RandomWordsState extends State<RandomWords> {
 
 
 
-   favMaterialPageRoute()=> MaterialPageRoute<void>(
+  favMaterialPageRoute()=> MaterialPageRoute<void>(
     // NEW lines from here...
     builder: (BuildContext context) {
+      Provider.of<UserRepository>(context);
       final tiles = _saved.map(
             (WordPair pair) {
           return ListTile(
@@ -64,10 +72,9 @@ class _RandomWordsState extends State<RandomWords> {
 
               _saved.remove(pair);
               updateFirestore();
-              //TODO: fix this somehow (IDK how to update this screen)
-              Navigator.of(context).pushReplacement(favMaterialPageRoute());
-              setState(() {
 
+              setState(() {
+                Provider.of<UserRepository>(context,listen:false).Update();
               });
             },
           );
@@ -102,7 +109,7 @@ class _RandomWordsState extends State<RandomWords> {
   loginMaterialPageRoute()=>MaterialPageRoute<void>(
     // NEW lines from here...
     builder: (BuildContext context) {
-
+      final isLoggingIn = Provider.of<UserRepository>(context).status;
       final myControllerEmail = TextEditingController();
       final myControllerPass = TextEditingController();
       final Email = TextFormField(
@@ -118,24 +125,16 @@ class _RandomWordsState extends State<RandomWords> {
         controller: myControllerPass,
       );
       final loginButton =FlatButton(
-        onPressed: disabledB ? null : () async {
-          //TODO: fix this somehow (IDK how to update this screen)
-          disabledB = true;
-          //Navigator.of(context).pushReplacement(loginMaterialPageRoute());
-          Navigator.of(context).setState(() {
-            Navigator.of(context).build(context);
-          });
-
-
-          String emails=myControllerEmail.text;
-          String passs=myControllerPass.text;
+        onPressed: isLoggingIn==Status.Authenticating ? null : () async {
+          Provider.of<UserRepository>(context,listen:false).Authenticating();
+          String email=myControllerEmail.text;
+          String password=myControllerPass.text;
           bool t= false;
 
           _auth = FirebaseAuth.instance;
 
-
           try {
-            await _auth.signInWithEmailAndPassword(email: emails, password: passs);
+            await _auth.signInWithEmailAndPassword(email: email, password: password);
             t= true;
           } catch (e) {
 
@@ -147,10 +146,12 @@ class _RandomWordsState extends State<RandomWords> {
 
 
           if(t){ //Login successful
+
             loggedin=true;
             userID=_auth.currentUser.uid;
             await updateFirestoreOnLogin();
             await updateFirestore();
+            Provider.of<UserRepository>(context,listen:false).Authenticated();
             Navigator.of(context).pop();
             setState(() {
               //build(context);
@@ -160,7 +161,8 @@ class _RandomWordsState extends State<RandomWords> {
           else{ //Login FAILED
             userID="";
             final snackBar = SnackBar(content: Text("There was an error logging into the app"));
-            _scaffoldkeyLogin.currentState.showSnackBar(snackBar);
+            _scaffoldkeySaved.currentState.showSnackBar(snackBar);
+            Provider.of<UserRepository>(context,listen:false).Unauthenticated();
           }
 // Find the Scaffold in the widget tree and use it to show a SnackBar.
 
@@ -173,7 +175,7 @@ class _RandomWordsState extends State<RandomWords> {
       );
 
       return Scaffold(
-          key: _scaffoldkeyLogin,
+          key: _scaffoldkeySaved,
           appBar: AppBar(
             title: Text('Login'),
           ),
@@ -193,16 +195,16 @@ class _RandomWordsState extends State<RandomWords> {
       loginMaterialPageRoute(),
     );
   }
-void signOut(){
-    updateFirestore();
+  Future<void> signOut() async {
+    await updateFirestore();
     _saved={};
-  _auth.signOut();
-  loggedin=false;
-  userID="";
-  setState(() {
-    //build(context);
-  });
-}
+    await _auth.signOut();
+    loggedin=false;
+    userID="";
+    setState(() {
+      //build(context);
+    });
+  }
   @override
   Widget build(BuildContext context) {
 
@@ -219,34 +221,34 @@ void signOut(){
     );
   }
 
-Future<void> updateFirestoreOnLogin() async {
-  List<dynamic> array1=[];
-  List<dynamic> array2=[];
-  DocumentSnapshot retrieve;
-  Map myMap;
-  CollectionReference database = FirebaseFirestore.instance.collection('Users');
-  //---- Retrieval ----
-  try{
-  retrieve= await database.doc(userID).get();
-  myMap=retrieve.data();
-  array1= myMap['firstList'];
-  array2= myMap['secondList'];
-  var i=0;
-  for(String s1 in array1){
-    _saved.add(WordPair(s1,array2[i]));
-    i+=1;
-  }
-  }
-  catch(e){
-  }
+  Future<void> updateFirestoreOnLogin() async {
+    List<dynamic> array1=[];
+    List<dynamic> array2=[];
+    DocumentSnapshot retrieve;
+    Map myMap;
+    CollectionReference database = FirebaseFirestore.instance.collection('Users');
+    //---- Retrieval ----
+    try{
+      retrieve= await database.doc(userID).get();
+      myMap=retrieve.data();
+      array1= myMap['firstList'];
+      array2= myMap['secondList'];
+      var i=0;
+      for(String s1 in array1){
+        _saved.add(WordPair(s1,array2[i]));
+        i+=1;
+      }
+    }
+    catch(e){
+    }
 
 
-  //if(retrieve.hasData){
-  //var retrieveList=retrieve.entries.toList();
+    //if(retrieve.hasData){
+    //var retrieveList=retrieve.entries.toList();
 
 // }
 //------
-}
+  }
   Future<void> updateFirestore()  async {
     if(userID==""){
       return;
@@ -256,16 +258,16 @@ Future<void> updateFirestoreOnLogin() async {
 
     CollectionReference database =await FirebaseFirestore.instance.collection('Users');
 
-       for(WordPair p in _saved) {
-         array1.add(p.first);
-         array2.add(p.second);
-       }
+    for(WordPair p in _saved) {
+      array1.add(p.first);
+      array2.add(p.second);
+    }
 
-      await database.document(userID).setData({'firstList':array1,'secondList':array2});
-   // }
+    await database.document(userID).setData({'firstList':array1,'secondList':array2});
+    // }
     //Update the document with current _saved.
-     //database.doc(userID).set({'saved':_saved});
-     //database.doc(userID).update({'saved':_saved});
+    //database.doc(userID).set({'saved':_saved});
+    //database.doc(userID).update({'saved':_saved});
 
   }
 
@@ -352,3 +354,40 @@ class App extends StatelessWidget {
   }
 }
 
+
+
+
+
+
+
+
+enum Status { Uninitialized, Authenticated, Authenticating, Unauthenticated }
+
+class UserRepository with ChangeNotifier {
+  FirebaseAuth _auth;
+  FirebaseUser _user;
+  Status _status = Status.Uninitialized;
+
+  UserRepository() {
+    _auth = FirebaseAuth.instance;
+  }
+
+  Status get status => _status;
+  FirebaseUser get user => _user;
+
+  void Authenticated(){
+    _status = Status.Authenticated;
+    notifyListeners();
+  }
+  void Authenticating() {
+      _status = Status.Authenticating;
+      notifyListeners();
+  }
+  void Unauthenticated()  {
+    _status = Status.Unauthenticated;
+    notifyListeners();
+  }
+  void Update(){
+    notifyListeners();
+  }
+}
