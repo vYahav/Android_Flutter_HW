@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:provider/provider.dart';
@@ -59,8 +58,10 @@ class RandomWords extends StatefulWidget {
 }
 
 class _RandomWordsState extends State<RandomWords> {
-   GlobalKey<ScaffoldState> _scaffoldkeySaved = GlobalKey<ScaffoldState>(debugLabel: '_scaffoldkeySaved');
-   GlobalKey<ScaffoldState> _scaffoldkeyMainScreen = GlobalKey<ScaffoldState>(debugLabel: '_scaffoldkeyMainScreen');
+  GlobalKey<ScaffoldState> _scaffoldkeySaved =
+      GlobalKey<ScaffoldState>(debugLabel: '_scaffoldkeySaved');
+  GlobalKey<ScaffoldState> _scaffoldkeyMainScreen =
+      GlobalKey<ScaffoldState>(debugLabel: '_scaffoldkeyMainScreen');
   final List<WordPair> _suggestions = <WordPair>[]; // NEW
   final TextStyle _biggerFont = const TextStyle(fontSize: 18); // NEW
   var _saved = Set<WordPair>(); // NEW
@@ -125,14 +126,19 @@ class _RandomWordsState extends State<RandomWords> {
           final myControllerEmail = TextEditingController();
           final myControllerPass = TextEditingController();
           final myControllerConfirm = TextEditingController();
-          final Email = TextFormField(
-            decoration: InputDecoration(labelText: 'Email'),
-            controller: myControllerEmail,
-          );
-          final Password = TextFormField(
-            decoration: InputDecoration(labelText: 'Password'),
-            controller: myControllerPass,
-          );
+          final Email = Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: TextFormField(
+                decoration: InputDecoration(labelText: 'Email'),
+                controller: myControllerEmail,
+              ));
+          final Password = Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: TextFormField(
+                obscureText: true,
+                decoration: InputDecoration(labelText: 'Password'),
+                controller: myControllerPass,
+              ));
           final loginButton = FlatButton(
             onPressed: isLoggingIn == Status.Authenticating
                 ? null
@@ -160,13 +166,11 @@ class _RandomWordsState extends State<RandomWords> {
                       userID = _auth.currentUser.uid;
                       userEmail = _auth.currentUser.email;
                       try {
-                          imageLink = await FirebaseStorage.instance.ref()
-                              .child(userID)
-                              .getDownloadURL();
-                      }
-                      catch(e){
-
-                      }
+                        imageLink = await FirebaseStorage.instance
+                            .ref()
+                            .child(userID)
+                            .getDownloadURL();
+                      } catch (e) {}
                       await updateFirestoreOnLogin();
                       await updateFirestore();
                       Provider.of<UserRepository>(context, listen: false)
@@ -195,114 +199,118 @@ class _RandomWordsState extends State<RandomWords> {
             ),
             color: Colors.red,
             textColor: Colors.white,
+            shape: new RoundedRectangleBorder(
+                borderRadius: new BorderRadius.circular(30.0)),
           );
 
           final signupButton = FlatButton(
+              shape: new RoundedRectangleBorder(
+                  borderRadius: new BorderRadius.circular(30.0)),
+              color: Colors.teal,
               onPressed: () {
-
                 showModalBottomSheet<void>(
                   isScrollControlled: true,
                   context: context,
                   builder: (BuildContext context) {
                     return Padding(
                         padding: MediaQuery.of(context).viewInsets,
-                    child:Container(
-                      height: 200,
-                      color: Colors.white,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                             Text('Please confirm your password below:'),
-                          TextFormField(
-                            autovalidateMode: AutovalidateMode.always,
-                            validator: (String val)=>val==myControllerPass.text?null:"Passwords must match",
-                      decoration: InputDecoration(labelText: 'Password:'),
-                      controller: myControllerConfirm,
-                    ),
-                            ElevatedButton(
-                              child: const Text('Confirm'),
-                              onPressed: () async {
-                                _auth = FirebaseAuth.instance;
-                                var t=false;
-                                var email=myControllerEmail.text;
-                                var confirmpassword=myControllerConfirm.text;
-                                var password=myControllerPass.text;
+                        child: Container(
+                          height: 200,
+                          color: Colors.white,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Text('Please confirm your password below:'),
+                                Padding(
+                                    padding: const EdgeInsets.all(15.0),
+                                    child: TextFormField(
+                                      obscureText: true,
+                                      autovalidateMode: AutovalidateMode.always,
+                                      validator: (String val) =>
+                                          val == myControllerPass.text
+                                              ? null
+                                              : "Passwords must match",
+                                      decoration: InputDecoration(
+                                          labelText: 'Password:'),
+                                      controller: myControllerConfirm,
+                                    )),
+                                ElevatedButton(
+                                  child: const Text('Confirm'),
+                                  onPressed: () async {
+                                    _auth = FirebaseAuth.instance;
+                                    var t = false;
+                                    var email = myControllerEmail.text;
+                                    var confirmpassword =
+                                        myControllerConfirm.text;
+                                    var password = myControllerPass.text;
 
-                                if(confirmpassword==password){
-                                  try {
-                                    await _auth.createUserWithEmailAndPassword(
-                                        email: email, password: password);
-                                    t = true;
-                                  } catch (e) {}
+                                    if (confirmpassword == password) {
+                                      try {
+                                        await _auth
+                                            .createUserWithEmailAndPassword(
+                                                email: email,
+                                                password: password);
+                                        t = true;
+                                      } catch (e) {}
 
+                                      if (t) {
+                                        //Login successful
 
+                                        loggedin = true;
+                                        userID = _auth.currentUser.uid;
+                                        userEmail = _auth.currentUser.email;
+                                        await updateFirestoreOnLogin();
+                                        await updateFirestore();
+                                        Provider.of<UserRepository>(context,
+                                                listen: false)
+                                            .Authenticated();
+                                        Navigator.of(context).pop();
+                                        setState(() {
+                                          //build(context);
+                                        });
+                                      } else {
+                                        //Login FAILED
+                                        userID = "";
+                                        userEmail = "";
+                                        final snackBar = SnackBar(
+                                            content: Text(
+                                                "There was an error signing up"));
+                                        _scaffoldkeySaved.currentState
+                                            .showSnackBar(snackBar);
+                                        Provider.of<UserRepository>(context,
+                                                listen: false)
+                                            .Unauthenticated();
+                                      }
 
-                                  if (t) {
-                                    //Login successful
+                                      //myControllerEmail.dispose();
+                                      //myControllerPass.dispose();
 
-                                    loggedin = true;
-                                    userID = _auth.currentUser.uid;
-                                    userEmail = _auth.currentUser.email;
-                                    await updateFirestoreOnLogin();
-                                    await updateFirestore();
-                                    Provider.of<UserRepository>(context, listen: false)
-                                        .Authenticated();
-                                    Navigator.of(context).pop();
-                                    setState(() {
-                                      //build(context);
-                                    });
-                                  } else {
-                                    //Login FAILED
-                                    userID = "";
-                                    userEmail = "";
-                                    final snackBar = SnackBar(
-                                        content:
-                                        Text("There was an error signing up"));
-                                    _scaffoldkeySaved.currentState.showSnackBar(snackBar);
-                                    Provider.of<UserRepository>(context, listen: false)
-                                        .Unauthenticated();
-                                  }
+                                      Navigator.pop(context);
+                                    } else {
+                                      //Passwords do not match
 
-                                  //myControllerEmail.dispose();
-                                  //myControllerPass.dispose();
-
-
-
-
-
-                                  Navigator.pop(context);
-                                }
-                                else{
-                                  //Passwords do not match
-
-                                }
-
-                                },
-                            )
-                          ],
-                        ),
-                      ),
-                    ));
+                                    }
+                                  },
+                                )
+                              ],
+                            ),
+                          ),
+                        ));
                   },
                 );
-
-
               },
-              child: Text("New user? Click to sign up"));
+              child: Text("New user? Click to sign up",
+                  style: TextStyle(color: Colors.white)));
 
           return Scaffold(
               key: _scaffoldkeySaved,
               appBar: AppBar(
                 title: Text('Login'),
               ),
-              body: Column(children: [
-                Email,
-                Password,
-                loginButton,
-                signupButton
-              ]));
+              body: Column(
+                  children: [Email, Password, loginButton, signupButton]));
         }, // ...to here.
       );
 
@@ -319,7 +327,7 @@ class _RandomWordsState extends State<RandomWords> {
     loggedin = false;
     userID = "";
     userEmail = "";
-    imageLink="";
+    imageLink = "";
     setState(() {
       //build(context);
     });
@@ -328,7 +336,7 @@ class _RandomWordsState extends State<RandomWords> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key:_scaffoldkeyMainScreen,
+      key: _scaffoldkeyMainScreen,
       appBar: AppBar(
         title: Text('Startup Name Generator'),
         actions: [
@@ -424,167 +432,171 @@ class _RandomWordsState extends State<RandomWords> {
   Widget _buildSuggestions() {
     //Provider.of<UserRepository>(context); //THIS CAUSES FIREBASE ERROR AT THE START
 
-    return userID != "" ? Scaffold(
-      body: GestureDetector(
-        onTap: () {
-          position = !position;
-          setState(() {});
-        },
-        child: SnappingSheet(
-          grabbing: Container(
-            color: Colors.grey,
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("      Welcome Back,  " + userEmail,
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
+    return userID != ""
+        ? Scaffold(
+            body: GestureDetector(
+              onTap: () {
+                position = !position;
+                setState(() {});
+              },
+              child: SnappingSheet(
+                grabbing: Container(
+                  color: Colors.grey,
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("      Welcome Back,  " + userEmail,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontSize: 16)),
+                        Container(
+                            child: Icon(
+                          Icons.arrow_upward,
                           color: Colors.white,
-                          fontSize: 16)),
-                  Container(
-                      child: Icon(
-                    Icons.arrow_upward,
-                    color: Colors.white,
-                    size: 30,
-                  ))
-                ]),
-          ),
-          snapPositions: [
-            SnapPosition(
-                positionPixel: position ? 150 : 0,
-                snappingCurve: Curves.easeIn,
-                snappingDuration: Duration(milliseconds: 750)),
-            SnapPosition(
-                positionFactor: 0.3,
-                snappingCurve: Curves.ease,
-                snappingDuration: Duration(milliseconds: 500)),
-          ],
-          sheetBelow: SnappingSheetContent(
-              child: Container(
-                color: Colors.white,
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                          width: 120,
-                          height: 120,
-                          child: Image(
-                            image: NetworkImage(imageLink != ""
-                                ? imageLink
-                                : 'https://uxwing.com/wp-content/themes/uxwing/download/07-design-and-development/image-not-found.png'),
-                          )),
-                      SingleChildScrollView(child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(userEmail,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                  fontSize: 26)),
-                          FlatButton(
-                            color: Colors.red,
-                            textColor: Colors.white,
-                            disabledColor: Colors.grey,
-                            disabledTextColor: Colors.black,
-                            padding: EdgeInsets.all(8.0),
-                            splashColor: Colors.blueAccent,
-                            onPressed: () async {
-                              File _image;
-                              final picker = ImagePicker();
-                              var pickedFile = await picker.getImage(source: ImageSource.gallery);
-                              if (pickedFile != null) {
-                                _image = File(pickedFile.path);
-                                await FirebaseStorage.instance.ref().child(userID).putFile(_image);
-                                imageLink= await FirebaseStorage.instance.ref().child(userID).getDownloadURL();
-                                setState(() {
-                                });
-                              } else {
-                                final snackBar = SnackBar(
-                                    content:
-                                    Text("No image selected"));
-                                _scaffoldkeyMainScreen.currentState.showSnackBar(snackBar);
-                              }
+                          size: 30,
+                        ))
+                      ]),
+                ),
+                snapPositions: [
+                  SnapPosition(
+                      positionPixel: position ? 150 : 0,
+                      snappingCurve: Curves.easeIn,
+                      snappingDuration: Duration(milliseconds: 750)),
+                  SnapPosition(
+                      positionFactor: 0.3,
+                      snappingCurve: Curves.ease,
+                      snappingDuration: Duration(milliseconds: 500)),
+                ],
+                sheetBelow: SnappingSheetContent(
+                    child: Container(
+                      color: Colors.white,
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  image: DecorationImage(
+                                      image: NetworkImage(imageLink != ""
+                                          ? imageLink
+                                          : 'https://uxwing.com/wp-content/themes/uxwing/download/07-design-and-development/image-not-found.png'),
+                                      fit: BoxFit.fill),
+                                )),
+                            SingleChildScrollView(
+                                child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(userEmail,
+                                    style: TextStyle(
 
-                            },
-                            child: Text(
-                              "Change avatar",
-                              style: TextStyle(fontSize: 20.0),
-                            ),
-                          )
-                        ],
-                      ))
-                    ]),
+                                        color: Colors.black,
+                                        fontSize: 22)),
+                                FlatButton(
+                                  color: Colors.teal,
+                                  textColor: Colors.white,
+                                  disabledColor: Colors.grey,
+                                  disabledTextColor: Colors.black,
+                                  padding: EdgeInsets.all(8.0),
+                                  splashColor: Colors.blueAccent,
+                                  onPressed: () async {
+                                    File _image;
+                                    final picker = ImagePicker();
+                                    var pickedFile = await picker.getImage(
+                                        source: ImageSource.gallery);
+                                    if (pickedFile != null) {
+                                      _image = File(pickedFile.path);
+                                      await FirebaseStorage.instance
+                                          .ref()
+                                          .child(userID)
+                                          .putFile(_image);
+                                      imageLink = await FirebaseStorage.instance
+                                          .ref()
+                                          .child(userID)
+                                          .getDownloadURL();
+                                      setState(() {});
+                                    } else {
+                                      final snackBar = SnackBar(
+                                          content: Text("No image selected"));
+                                      _scaffoldkeyMainScreen.currentState
+                                          .showSnackBar(snackBar);
+                                    }
+                                  },
+                                  child: Text("Change avatar"),
+                                )
+                              ],
+                            ))
+                          ]),
+                    ),
+                    heightBehavior: SnappingSheetHeight.fit()),
+                child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    // The itemBuilder callback is called once per suggested
+                    // word pairing, and places each suggestion into a ListTile
+                    // row. For even rows, the function adds a ListTile row for
+                    // the word pairing. For odd rows, the function adds a
+                    // Divider widget to visually separate the entries. Note that
+                    // the divider may be difficult to see on smaller devices.
+                    itemBuilder: (BuildContext _context, int i) {
+                      // Add a one-pixel-high divider widget before each row
+                      // in the ListView.
+                      if (i.isOdd) {
+                        return Divider();
+                      }
+
+                      // The syntax "i ~/ 2" divides i by 2 and returns an
+                      // integer result.
+                      // For example: 1, 2, 3, 4, 5 becomes 0, 1, 1, 2, 2.
+                      // This calculates the actual number of word pairings
+                      // in the ListView,minus the divider widgets.
+                      final int index = i ~/ 2;
+                      // If you've reached the end of the available word
+                      // pairings...
+                      if (index >= _suggestions.length) {
+                        // ...then generate 10 more and add them to the
+                        // suggestions list.
+                        _suggestions.addAll(generateWordPairs().take(10));
+                      }
+                      return _buildRow(_suggestions[index]);
+                    }),
               ),
-              heightBehavior: SnappingSheetHeight.fit()),
-          child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              // The itemBuilder callback is called once per suggested
-              // word pairing, and places each suggestion into a ListTile
-              // row. For even rows, the function adds a ListTile row for
-              // the word pairing. For odd rows, the function adds a
-              // Divider widget to visually separate the entries. Note that
-              // the divider may be difficult to see on smaller devices.
-              itemBuilder: (BuildContext _context, int i) {
-                // Add a one-pixel-high divider widget before each row
-                // in the ListView.
-                if (i.isOdd) {
-                  return Divider();
-                }
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.all(16),
+            // The itemBuilder callback is called once per suggested
+            // word pairing, and places each suggestion into a ListTile
+            // row. For even rows, the function adds a ListTile row for
+            // the word pairing. For odd rows, the function adds a
+            // Divider widget to visually separate the entries. Note that
+            // the divider may be difficult to see on smaller devices.
+            itemBuilder: (BuildContext _context, int i) {
+              // Add a one-pixel-high divider widget before each row
+              // in the ListView.
+              if (i.isOdd) {
+                return Divider();
+              }
 
-                // The syntax "i ~/ 2" divides i by 2 and returns an
-                // integer result.
-                // For example: 1, 2, 3, 4, 5 becomes 0, 1, 1, 2, 2.
-                // This calculates the actual number of word pairings
-                // in the ListView,minus the divider widgets.
-                final int index = i ~/ 2;
-                // If you've reached the end of the available word
-                // pairings...
-                if (index >= _suggestions.length) {
-                  // ...then generate 10 more and add them to the
-                  // suggestions list.
-                  _suggestions.addAll(generateWordPairs().take(10));
-                }
-                return _buildRow(_suggestions[index]);
-              }),
-        ),
-      ),
-    ) : ListView.builder(
-        padding: const EdgeInsets.all(16),
-        // The itemBuilder callback is called once per suggested
-        // word pairing, and places each suggestion into a ListTile
-        // row. For even rows, the function adds a ListTile row for
-        // the word pairing. For odd rows, the function adds a
-        // Divider widget to visually separate the entries. Note that
-        // the divider may be difficult to see on smaller devices.
-        itemBuilder: (BuildContext _context, int i) {
-          // Add a one-pixel-high divider widget before each row
-          // in the ListView.
-          if (i.isOdd) {
-            return Divider();
-          }
-
-          // The syntax "i ~/ 2" divides i by 2 and returns an
-          // integer result.
-          // For example: 1, 2, 3, 4, 5 becomes 0, 1, 1, 2, 2.
-          // This calculates the actual number of word pairings
-          // in the ListView,minus the divider widgets.
-          final int index = i ~/ 2;
-          // If you've reached the end of the available word
-          // pairings...
-          if (index >= _suggestions.length) {
-            // ...then generate 10 more and add them to the
-            // suggestions list.
-            _suggestions.addAll(generateWordPairs().take(10));
-          }
-          return _buildRow(_suggestions[index]);
-        });
+              // The syntax "i ~/ 2" divides i by 2 and returns an
+              // integer result.
+              // For example: 1, 2, 3, 4, 5 becomes 0, 1, 1, 2, 2.
+              // This calculates the actual number of word pairings
+              // in the ListView,minus the divider widgets.
+              final int index = i ~/ 2;
+              // If you've reached the end of the available word
+              // pairings...
+              if (index >= _suggestions.length) {
+                // ...then generate 10 more and add them to the
+                // suggestions list.
+                _suggestions.addAll(generateWordPairs().take(10));
+              }
+              return _buildRow(_suggestions[index]);
+            });
   }
-
-
-
-
 }
 
 class App extends StatelessWidget {
