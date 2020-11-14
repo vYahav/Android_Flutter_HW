@@ -201,9 +201,12 @@ class _RandomWordsState extends State<RandomWords> {
               onPressed: () {
 
                 showModalBottomSheet<void>(
+                  isScrollControlled: true,
                   context: context,
                   builder: (BuildContext context) {
-                    return Container(
+                    return Padding(
+                        padding: MediaQuery.of(context).viewInsets,
+                    child:Container(
                       height: 200,
                       color: Colors.white,
                       child: Center(
@@ -281,7 +284,7 @@ class _RandomWordsState extends State<RandomWords> {
                           ],
                         ),
                       ),
-                    );
+                    ));
                   },
                 );
 
@@ -471,7 +474,7 @@ class _RandomWordsState extends State<RandomWords> {
                                 ? imageLink
                                 : 'https://uxwing.com/wp-content/themes/uxwing/download/07-design-and-development/image-not-found.png'),
                           )),
-                      Column(
+                      SingleChildScrollView(child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -511,7 +514,7 @@ class _RandomWordsState extends State<RandomWords> {
                             ),
                           )
                         ],
-                      )
+                      ))
                     ]),
               ),
               heightBehavior: SnappingSheetHeight.fit()),
