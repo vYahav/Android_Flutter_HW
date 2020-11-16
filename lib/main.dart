@@ -552,7 +552,7 @@ class _RandomWordsState extends State<RandomWords> {
                       // integer result.
                       // For example: 1, 2, 3, 4, 5 becomes 0, 1, 1, 2, 2.
                       // This calculates the actual number of word pairings
-                      // in the ListView,minus the divider widgets.
+                      // in the ListView,minus the divider widgets
                       final int index = i ~/ 2;
                       // If you've reached the end of the available word
                       // pairings...
