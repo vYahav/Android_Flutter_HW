@@ -118,7 +118,8 @@ class _RandomWordsState extends State<RandomWords> {
       favMaterialPageRoute(),
     );
   }
-
+bool confirmclicked=false;
+  final _formKey = GlobalKey<FormState>();
   loginMaterialPageRoute() => MaterialPageRoute<void>(
         // NEW lines from here...
         builder: (BuildContext context) {
@@ -225,27 +226,35 @@ class _RandomWordsState extends State<RandomWords> {
                                 Text('Please confirm your password below:'),
                                 Padding(
                                     padding: const EdgeInsets.all(15.0),
-                                    child: TextFormField(
+                                    child: Form(
+                                        key:_formKey,
+                                        child:TextFormField(
                                       obscureText: true,
-                                      autovalidateMode: AutovalidateMode.always,
-                                      validator: (String val) =>
-                                          val == myControllerPass.text
-                                              ? null
-                                              : "Passwords must match",
+                                      validator: (String val){
+                                        if(val != myControllerPass.text && confirmclicked) {
+                                          confirmclicked=false;
+                                          return "Passwords must match";
+                                        }
+                                        else{
+                                          return null;
+                                        }
+                                      }
+                                          ,
                                       decoration: InputDecoration(
                                           labelText: 'Password:'),
                                       controller: myControllerConfirm,
-                                    )),
+                                    ))),
                                 ElevatedButton(
                                   child: const Text('Confirm'),
                                   onPressed: () async {
+                                    confirmclicked=true;
+                                    _formKey.currentState.validate();
                                     _auth = FirebaseAuth.instance;
                                     var t = false;
                                     var email = myControllerEmail.text;
                                     var confirmpassword =
                                         myControllerConfirm.text;
                                     var password = myControllerPass.text;
-
                                     if (confirmpassword == password) {
                                       try {
                                         await _auth
@@ -427,20 +436,38 @@ class _RandomWordsState extends State<RandomWords> {
     );
   }
 
+  SnappingSheetController mysnapControl = SnappingSheetController();
   bool position = false;
   String imageLink = "";
   Widget _buildSuggestions() {
     //Provider.of<UserRepository>(context); //THIS CAUSES FIREBASE ERROR AT THE START
-
+    final myposition = [
+      SnapPosition(
+          positionPixel: 0.0,
+          snappingCurve: Curves.easeOut,
+          snappingDuration: Duration(milliseconds: 700)),
+      SnapPosition(
+          positionPixel: MediaQuery
+              .of(context)
+              .size
+              .height * 0.15,
+          snappingCurve: Curves.easeIn,
+          snappingDuration: Duration(milliseconds: 700)),
+    ];
     return userID != ""
         ? Scaffold(
-            body: GestureDetector(
-              onTap: () {
-                position = !position;
-                setState(() {});
-              },
-              child: SnappingSheet(
-                grabbing: Container(
+            body: SnappingSheet(
+              snappingSheetController: mysnapControl,
+              grabbing: GestureDetector(
+                  onTap: () {
+
+                    setState(() {
+                      mysnapControl.snapToPosition(myposition[mysnapControl.currentSnapPosition == myposition[0] ? 1 : 0]);
+
+                    });
+                  },child:
+
+                Container(
                   color: Colors.grey,
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -457,17 +484,11 @@ class _RandomWordsState extends State<RandomWords> {
                           size: 30,
                         ))
                       ]),
+                )
+
                 ),
-                snapPositions: [
-                  SnapPosition(
-                      positionPixel: position ? 150 : 0,
-                      snappingCurve: Curves.easeIn,
-                      snappingDuration: Duration(milliseconds: 750)),
-                  SnapPosition(
-                      positionFactor: 0.3,
-                      snappingCurve: Curves.ease,
-                      snappingDuration: Duration(milliseconds: 500)),
-                ],
+              //initSnapPosition: myposition[0],
+                snapPositions: myposition,
                 sheetBelow: SnappingSheetContent(
                     child: Container(
                       color: Colors.white,
@@ -502,7 +523,7 @@ class _RandomWordsState extends State<RandomWords> {
                                   disabledColor: Colors.grey,
                                   disabledTextColor: Colors.black,
                                   padding: EdgeInsets.all(8.0),
-                                  splashColor: Colors.blueAccent,
+                                  splashColor: Colors.teal,
                                   onPressed: () async {
                                     File _image;
                                     final picker = ImagePicker();
@@ -564,7 +585,7 @@ class _RandomWordsState extends State<RandomWords> {
                       return _buildRow(_suggestions[index]);
                     }),
               ),
-            ),
+
           )
         : ListView.builder(
             padding: const EdgeInsets.all(16),
